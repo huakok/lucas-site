@@ -210,14 +210,24 @@
 
   function resize() {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    // The canvas is as tall as the largest the screen gets, so a phone hiding
-    // or showing its address bar while scrolling does not count as a resize
-    // (a real resize rebuilds the water and would wipe any ripples).
-    const w = view.clientWidth || window.innerWidth;
-    const h = view.clientHeight || window.innerHeight;
-    if (w === width && h === height) return;
+    // A phone's visible height changes whenever its address bar slides in or
+    // out, and rebuilding for that would wipe any ripples. So on touch screens
+    // the canvas is made as tall as the screen itself, once, and after that
+    // only a change of width (turning the phone) counts as a resize.
+    const w = window.innerWidth;
+    let h = window.innerHeight;
+    const touchScreen = matchMedia('(pointer: coarse)').matches;
+    if (touchScreen && window.screen) {
+      const { width: sw, height: sh } = window.screen;
+      h = Math.max(h, h >= w ? Math.max(sw, sh) : Math.min(sw, sh));
+    }
+    if (w === width && (h === height || (touchScreen && h < height))) return;
     width = w;
     height = h;
+    // Set the size on the page in the same step, so the drawing is never
+    // stretched to fit a box of a different shape.
+    view.style.width = `${w}px`;
+    view.style.height = `${h}px`;
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -352,7 +362,10 @@
     if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.9; }
     if (b.x > width - b.r) { b.x = width - b.r; b.vx = -Math.abs(b.vx) * 0.9; }
     if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy) * 0.9; }
-    if (b.y > height - b.r) { b.y = height - b.r; b.vy = -Math.abs(b.vy) * 0.9; }
+    // The floor is the bottom of what is visible, which on a phone can be
+    // higher than the bottom of the canvas.
+    const floor = Math.min(height, window.innerHeight || height);
+    if (b.y > floor - b.r) { b.y = floor - b.r; b.vy = -Math.abs(b.vy) * 0.9; }
 
     // Slow down after a hit, but never stop drifting.
     const speed = Math.hypot(b.vx, b.vy) || 1;
@@ -650,7 +663,7 @@
   }
 
   // Clicks on controls and inside the chat keep their normal job.
-  const isControl = (target) => Boolean(target.closest('a, button, input, select, textarea, label, summary, .chat'));
+  const isControl = (target) => Boolean(target.closest?.('a, button, input, select, textarea, label, summary, .chat'));
 
   // A mouse click acts at once. A finger only counts when it lifts again
   // quickly without having moved, so a swipe to scroll does nothing.
