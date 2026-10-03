@@ -125,7 +125,8 @@
         }
       }
       [now, before] = [before, now];
-      if (biggest < 0.004) {
+      // Below this the waves are too faint to see, so the water is at rest.
+      if (biggest < 0.015) {
         now.fill(0);
         before.fill(0);
         calm = true;
@@ -168,6 +169,7 @@
         }
         encode();
       },
+      isCalm: () => calm,
       render(scene) {
         gl.activeTexture(gl.TEXTURE0);
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -183,6 +185,17 @@
   const canvas = water ? document.createElement('canvas') : view;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+
+  // Passing the scene through the water every frame is the expensive part,
+  // and phones feel it. So the plain scene is what is normally on screen, and
+  // the water canvas takes its place only while a ripple is moving.
+  let showingWater = false;
+  if (water) {
+    canvas.className = 'sky-scene';
+    canvas.setAttribute('aria-hidden', 'true');
+    view.before(canvas);
+    view.style.visibility = 'hidden';
+  }
 
   // Read the accent colour from the stylesheet so the fish follow the palette.
   const hex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().replace('#', '');
@@ -209,7 +222,6 @@
   if (scoreValue) scoreValue.textContent = score;
 
   function resize() {
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
     // A phone's visible height changes whenever its address bar slides in or
     // out, and rebuilding for that would wipe any ripples. So on touch screens
     // the canvas is made as tall as the screen itself, once, and after that
@@ -226,8 +238,13 @@
     height = h;
     // Set the size on the page in the same step, so the drawing is never
     // stretched to fit a box of a different shape.
-    view.style.width = `${w}px`;
-    view.style.height = `${h}px`;
+    for (const el of water ? [view, canvas] : [view]) {
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+    }
+    // Phones draw at a lower sharpness: far fewer pixels to fill each frame,
+    // and soft silhouettes hide the difference.
+    const ratio = Math.min(window.devicePixelRatio || 1, touchScreen ? 1.5 : 2);
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -599,7 +616,14 @@
     balls.forEach(drawBall);
     drawHoop(true);
     drawPopups();
-    if (water) water.render(canvas);
+    if (!water) return;
+    const active = !water.isCalm();
+    if (active) water.render(canvas);
+    if (active !== showingWater) {
+      showingWater = active;
+      view.style.visibility = active ? 'visible' : 'hidden';
+      canvas.style.visibility = active ? 'hidden' : 'visible';
+    }
   }
 
   // ---- loop and input ------------------------------------------------------
