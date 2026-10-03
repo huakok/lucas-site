@@ -637,17 +637,38 @@
   });
   document.addEventListener('pointerleave', () => { pointer.active = false; });
 
-  window.addEventListener('pointerdown', (e) => {
-    // Clicks on controls and inside the chat keep their normal job.
-    if (e.target.closest('a, button, input, select, textarea, label, summary, .chat')) return;
-    if (balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
+  // A click or tap on empty space: knock a ball if one is there, otherwise
+  // disturb the water.
+  function poke(x, y) {
+    if (balls.some((b) => kick(b, x, y, 26, 520))) return;
     if (water) {
-      water.drop(e.clientX, e.clientY);
+      water.drop(x, y);
       return;
     }
-    ripples.push({ x: e.clientX, y: e.clientY, age: 0 });
+    ripples.push({ x, y, age: 0 });
     if (ripples.length > 8) ripples.shift();
+  }
+
+  // Clicks on controls and inside the chat keep their normal job.
+  const isControl = (target) => Boolean(target.closest('a, button, input, select, textarea, label, summary, .chat'));
+
+  // A mouse click acts at once. A finger only counts when it lifts again
+  // quickly without having moved, so a swipe to scroll does nothing.
+  let touch = null;
+  window.addEventListener('pointerdown', (e) => {
+    if (isControl(e.target)) return;
+    if (e.pointerType === 'mouse') poke(e.clientX, e.clientY);
+    else touch = { id: e.pointerId, x: e.clientX, y: e.clientY, at: performance.now() };
   });
+  window.addEventListener('pointerup', (e) => {
+    if (!touch || touch.id !== e.pointerId) return;
+    const moved = Math.hypot(e.clientX - touch.x, e.clientY - touch.y);
+    const held = performance.now() - touch.at;
+    if (moved < 10 && held < 500) poke(touch.x, touch.y);
+    touch = null;
+  });
+  // The browser cancels the touch when it turns into a scroll.
+  window.addEventListener('pointercancel', () => { touch = null; });
 
   requestAnimationFrame(frame);
 })();
