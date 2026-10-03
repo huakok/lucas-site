@@ -1,13 +1,188 @@
 // Animated page background, seen from above like a pond: fish silhouettes
-// swim around on their own, and a click on empty space sends out a ripple.
+// swim around on their own, and a click on empty space disturbs the water.
+// The water is a small wave simulation: ripples spread, cross each other,
+// bounce off the edges of the screen, bend the fish beneath them and catch
+// the light. Where WebGL is not available, simple rings are drawn instead.
 // A tennis ball, a basketball and a pickleball also bounce around and can be
 // knocked with the cursor. Knocking the basketball down through the hoop on
 // the right edge scores a point.
 (() => {
-  const canvas = document.getElementById('sky');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const view = document.getElementById('sky');
+  if (!view) return;
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- water ---------------------------------------------------------------
+  // The fish, balls and hoop are drawn on a hidden canvas (the "scene"). The
+  // visible canvas then shows that scene through the water surface.
+
+  const VERTEX = `
+    attribute vec2 aPos;
+    varying vec2 vUv;
+    void main() {
+      vUv = vec2((aPos.x + 1.0) * 0.5, (1.0 - aPos.y) * 0.5);
+      gl_Position = vec4(aPos, 0.0, 1.0);
+    }`;
+  const FRAGMENT = `
+    precision mediump float;
+    uniform sampler2D uScene;
+    uniform sampler2D uWave;
+    uniform vec2 uPixel;
+    varying vec2 vUv;
+    void main() {
+      vec2 slope = (texture2D(uWave, vUv).rg - 0.5) * 2.0;
+      // Refraction: what lies under a slope appears shifted.
+      vec4 colour = texture2D(uScene, vUv + slope * 34.0 * uPixel);
+      // Light from the top left: slopes facing it shine, slopes facing away darken.
+      float facing = dot(slope, vec2(-0.6, -0.8));
+      float shine = smoothstep(0.04, 0.5, facing);
+      float shade = smoothstep(0.04, 0.5, -facing);
+      float glint = pow(shine, 3.0);
+      vec4 dark = vec4(vec3(0.15, 0.13, 0.11), 1.0) * (shade * 0.2);
+      colour = dark + colour * (1.0 - dark.a);
+      vec4 light = vec4(1.0) * min(1.0, shine * 0.35 + glint * 0.5);
+      colour = light + colour * (1.0 - light.a);
+      gl_FragColor = colour;
+    }`;
+
+  function createWater(target) {
+    const probe = document.createElement('canvas');
+    if (!(probe.getContext('webgl') || probe.getContext('experimental-webgl'))) return null;
+    const gl = target.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false });
+    if (!gl) return null;
+
+    const compile = (type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      return shader;
+    };
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+    gl.useProgram(program);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(program, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const texture = (unit) => {
+      const tex = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    };
+    texture(0);
+    texture(1);
+    gl.uniform1i(gl.getUniformLocation(program, 'uScene'), 0);
+    gl.uniform1i(gl.getUniformLocation(program, 'uWave'), 1);
+    const uPixel = gl.getUniformLocation(program, 'uPixel');
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.clearColor(0, 0, 0, 0);
+
+    // The water surface is a coarse grid of heights, one cell per CELL pixels.
+    const CELL = 5;
+    const DAMPING = 0.986;
+    let cols = 0;
+    let rows = 0;
+    let now = new Float32Array(0);
+    let before = new Float32Array(0);
+    let slopes = new Uint8Array(0);
+    let calm = true;
+    let owed = 0;
+
+    function encode() {
+      for (let y = 1; y < rows - 1; y += 1) {
+        for (let x = 1; x < cols - 1; x += 1) {
+          const i = y * cols + x;
+          const gx = (now[i + 1] - now[i - 1]) * 3;
+          const gy = (now[i + cols] - now[i - cols]) * 3;
+          slopes[i * 3] = 128 + Math.max(-1, Math.min(1, gx)) * 127;
+          slopes[i * 3 + 1] = 128 + Math.max(-1, Math.min(1, gy)) * 127;
+        }
+      }
+      gl.activeTexture(gl.TEXTURE1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, cols, rows, 0, gl.RGB, gl.UNSIGNED_BYTE, slopes);
+    }
+
+    // One step of the wave equation: each cell moves towards the average of
+    // its neighbours and overshoots, which is what makes a wave travel.
+    function advance() {
+      let biggest = 0;
+      for (let y = 1; y < rows - 1; y += 1) {
+        for (let x = 1; x < cols - 1; x += 1) {
+          const i = y * cols + x;
+          const v = ((now[i - 1] + now[i + 1] + now[i - cols] + now[i + cols]) * 0.5 - before[i]) * DAMPING;
+          before[i] = v;
+          if (v > biggest || -v > biggest) biggest = Math.abs(v);
+        }
+      }
+      [now, before] = [before, now];
+      if (biggest < 0.004) {
+        now.fill(0);
+        before.fill(0);
+        calm = true;
+      }
+    }
+
+    return {
+      resize(w, h) {
+        cols = Math.max(8, Math.ceil(w / CELL));
+        rows = Math.max(8, Math.ceil(h / CELL));
+        now = new Float32Array(cols * rows);
+        before = new Float32Array(cols * rows);
+        slopes = new Uint8Array(cols * rows * 3).fill(128);
+        calm = true;
+        gl.viewport(0, 0, target.width, target.height);
+        gl.uniform2f(uPixel, 1 / Math.max(1, w), 1 / Math.max(1, h));
+        encode();
+      },
+      // Pushes the surface down around a point, like a finger or a pebble.
+      drop(x, y, strength = 1.3) {
+        const cx = Math.round(x / CELL);
+        const cy = Math.round(y / CELL);
+        const radius = 2.4; // narrow, so several rings follow the first
+        for (let dy = -8; dy <= 8; dy += 1) {
+          for (let dx = -8; dx <= 8; dx += 1) {
+            const px = cx + dx;
+            const py = cy + dy;
+            if (px < 1 || py < 1 || px >= cols - 1 || py >= rows - 1) continue;
+            now[py * cols + px] -= strength * Math.exp(-(dx * dx + dy * dy) / (radius * radius));
+          }
+        }
+        calm = false;
+      },
+      step(dt) {
+        if (calm) return;
+        owed = Math.min(owed + dt, 0.05);
+        while (owed >= 1 / 60) {
+          owed -= 1 / 60;
+          if (!calm) advance();
+        }
+        encode();
+      },
+      render(scene) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, scene);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      },
+    };
+  }
+
+  const water = still ? null : createWater(view);
+  const canvas = water ? document.createElement('canvas') : view;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
   // Read the accent colour from the stylesheet so the fish follow the palette.
   const hex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().replace('#', '');
@@ -41,6 +216,11 @@
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    if (water) {
+      view.width = canvas.width;
+      view.height = canvas.height;
+      water.resize(width, height);
+    }
     hoop.rim = width < 700 ? 64 : 86;
     hoop.x2 = width - 8;
     hoop.x1 = hoop.x2 - hoop.rim;
@@ -297,9 +477,8 @@
     ctx.restore();
   }
 
-  // A ripple is a few rings spreading from the click. Each ring is a dark line
-  // with a light one just outside it, the way a real ripple catches the light,
-  // and the rings slow and fade as they travel.
+  // Fallback when the water simulation is unavailable: a few rings spreading
+  // from the click, each a dark line with a light one just outside it.
   function drawRipple(r) {
     const fade = Math.max(0, 1 - r.age / RIPPLE_LIFE);
     for (let i = 0; i < 4; i += 1) {
@@ -406,11 +585,13 @@
     ctx.clearRect(0, 0, width, height);
     fish.forEach(drawFish);
     ripples.forEach(drawRipple);
-    if (!playing) return;
-    drawHoop(false);
-    balls.forEach(drawBall);
-    drawHoop(true);
-    drawPopups();
+    if (playing) {
+      drawHoop(false);
+      balls.forEach(drawBall);
+      drawHoop(true);
+      drawPopups();
+    }
+    if (water) water.render(canvas);
   }
 
   // ---- loop and input ------------------------------------------------------
@@ -424,6 +605,7 @@
     fish.forEach((f) => moveFish(f, dt));
     ripples.forEach((r) => { r.age += dt; });
     ripples = ripples.filter((r) => r.age < RIPPLE_LIFE);
+    if (water) water.step(dt);
     if (playing) {
       balls.forEach((b) => moveBall(b, dt));
       collideBalls();
@@ -467,6 +649,10 @@
     // Clicks on controls and inside the chat keep their normal job.
     if (e.target.closest('a, button, input, select, textarea, label, summary, .chat')) return;
     if (playing && balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
+    if (water) {
+      water.drop(e.clientX, e.clientY);
+      return;
+    }
     ripples.push({ x: e.clientX, y: e.clientY, age: 0 });
     if (ripples.length > 8) ripples.shift();
   });
