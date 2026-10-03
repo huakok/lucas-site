@@ -16,6 +16,7 @@
   const MAX_PLANES = 12;
   const SHOT_WINDOW = 4; // seconds a hit stays live for scoring
   let clock = 0; // seconds since the page loaded
+  let playing = true; // whether the balls, hoop and score are shown
   let width = 0;
   let height = 0;
   let planes = [];
@@ -41,6 +42,14 @@
     hoop.x2 = width - 8;
     hoop.x1 = hoop.x2 - hoop.rim;
     hoop.y = height * 0.34;
+    updatePlay();
+  }
+
+  // On phones the balls and hoop would sit on top of the text, so they only
+  // appear around the hero. Wider screens have room for them everywhere.
+  function updatePlay() {
+    playing = width >= 700 || window.scrollY < height * 0.6;
+    if (scoreBox) scoreBox.classList.toggle('score--off', !playing);
   }
 
   const makePlane = (x, y, angle, speed) => ({
@@ -349,6 +358,7 @@
   function draw() {
     ctx.clearRect(0, 0, width, height);
     planes.forEach(drawPlane);
+    if (!playing) return;
     drawHoop(false);
     balls.forEach(drawBall);
     drawHoop(true);
@@ -364,8 +374,10 @@
     clock = now / 1000;
     if (now - pointer.at > 120) { pointer.vx = 0; pointer.vy = 0; }
     planes.forEach((p) => movePlane(p, dt));
-    balls.forEach((b) => moveBall(b, dt));
-    collideBalls();
+    if (playing) {
+      balls.forEach((b) => moveBall(b, dt));
+      collideBalls();
+    }
     hoop.swish = Math.max(0, hoop.swish - dt);
     hoop.cooldown = Math.max(0, hoop.cooldown - dt);
     popups.forEach((p) => { p.age += dt; });
@@ -384,6 +396,7 @@
   }
 
   window.addEventListener('resize', resize);
+  window.addEventListener('scroll', updatePlay, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) { last = performance.now(); requestAnimationFrame(frame); }
   });
@@ -404,7 +417,7 @@
   window.addEventListener('pointerdown', (e) => {
     // Clicks on controls and inside the chat keep their normal job.
     if (e.target.closest('a, button, input, select, textarea, label, summary, .chat')) return;
-    if (balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
+    if (playing && balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
     const plane = makePlane(e.clientX, e.clientY, rand(-1.2, -0.2), 320);
     planes.push(plane);
     if (planes.length > MAX_PLANES) planes.shift();

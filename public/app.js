@@ -115,6 +115,7 @@ function renderContent(content) {
     footerTelegram.hidden = false;
   }
   if (STATIC) {
+    $('#channel-lede').textContent = 'My bot publishes to my Telegram channel on a schedule. These are the next posts in its queue.';
     // No server to receive the form, so offer the direct routes instead.
     form.hidden = true;
     $('#direct-actions').replaceChildren(
