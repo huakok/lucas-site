@@ -1,0 +1,248 @@
+{
+  "brand": {
+    "name": "Lucas",
+    "email": "loogas10biz@gmail.com",
+    "telegram": "itslugas",
+    "line": "Computer science student in Singapore. I build Telegram bots and websites."
+  },
+  "currency": "S$",
+  "socials": {
+    "tiktok": "",
+    "github": "https://github.com/huakok",
+    "linkedin": ""
+  },
+  "bot": {
+    "welcome": "I study computer science at NTU in Singapore and build Telegram bots and websites for small businesses. This bot is one of them: everything you tap here is something I can build for you."
+  },
+  "about": {
+    "photo": "/lucas.jpg",
+    "photoAlt": "Lucas",
+    "paragraphs": [
+      "I am a second-year computer science student at NTU in Singapore. Outside lectures I build small software systems for businesses: Telegram bots, websites, and the databases that connect them.",
+      "Before university I interned at a networking company, configuring switches and VLANs and helping move an office to a new internet provider, and I taught myself the CCNA syllabus. During National Service I worked as a finance clerk, handling logistics and procurement.",
+      "I also tutor part-time, which is how I came to build a matching system for a tuition agency. I like software that stays lean: few moving parts, and nothing to maintain that does not need maintaining.",
+      "Away from the screen it is tennis (I was vice-captain of my junior college team), the gym, basketball and pickleball."
+    ],
+    "facts": [
+      { "label": "Based in", "value": "Singapore" },
+      { "label": "Studying", "value": "Computer Science, NTU, 2025 to 2029" },
+      { "label": "Building", "value": "Telegram bots, websites, small databases" },
+      { "label": "Before", "value": "IT internship in networking, National Service" },
+      { "label": "Off screen", "value": "Tennis, gym, basketball, pickleball" }
+    ]
+  },
+  "projects": [
+    {
+      "kind": "Client project",
+      "name": "Tutor-matching system for a tuition agency",
+      "summary": "A Telegram bot, a database and a live assignments page for a Singapore home tuition agency. The owner posts an assignment once and it reaches the website, the channel and every tutor it fits. Tutors register, browse and apply inside the bot.",
+      "stack": "Telegram Bot API · PostgreSQL · serverless functions · 34 automated tests"
+    },
+    {
+      "kind": "Personal project",
+      "name": "Finance tracker",
+      "summary": "The tracker I use for my own money: transactions, recurring bills, CSV import, holdings with live prices and travel spending in other currencies. It holds four years of my records.",
+      "stack": "HTML, CSS and JavaScript · Chart.js · runs in the browser"
+    },
+    {
+      "kind": "This site",
+      "name": "Website, bot and channel as one program",
+      "summary": "The page you are reading, its Telegram bot and its channel all run from one small program. The form at the bottom lands in my Telegram, and the channel posts on a schedule without me.",
+      "stack": "Node.js · Telegram Bot API · no third-party libraries"
+    }
+  ],
+  "services": [
+    {
+      "id": "bot",
+      "name": "Telegram bots",
+      "summary": "A bot that answers customers, takes bookings and orders, and messages you when something needs a person.",
+      "points": [
+        "Menus and answers to the questions you get every day",
+        "Bookings, orders and payments inside the chat",
+        "Enquiries sent to your own Telegram with one-tap reply",
+        "A channel that posts on a schedule without you",
+        "Broadcasts to everyone who has used the bot"
+      ]
+    },
+    {
+      "id": "web",
+      "name": "Websites",
+      "summary": "A fast site that explains what you do and sends visitors to the next step, written and designed for you.",
+      "points": [
+        "Designed for phones first, then desktop",
+        "Copy written with you, not left as filler text",
+        "Forms that land in your Telegram, not a forgotten inbox",
+        "Search basics, analytics, domain and hosting set up",
+        "Prices and text you can change in one file"
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "id": "starter-bot",
+      "kind": "bot",
+      "name": "Starter bot",
+      "price": 600,
+      "unit": "project",
+      "timeline": "1 week",
+      "blurb": "A menu bot that answers the usual questions and collects enquiries.",
+      "includes": [
+        "Menu with up to 8 screens",
+        "Answers to your common questions",
+        "Enquiry form that messages you",
+        "Hosting set-up",
+        "14 days of fixes after launch"
+      ]
+    },
+    {
+      "id": "business-bot",
+      "kind": "bot",
+      "name": "Business bot",
+      "price": 1800,
+      "unit": "project",
+      "timeline": "2 to 3 weeks",
+      "blurb": "Bookings or orders, payments, a database, and admin commands for you and your staff.",
+      "includes": [
+        "Bookings or orders with confirmations",
+        "A database that keeps every record",
+        "Payments in Telegram or by payment link",
+        "Admin commands for you and your staff",
+        "Broadcasts to your subscribers",
+        "30 days of fixes after launch"
+      ]
+    },
+    {
+      "id": "landing",
+      "kind": "web",
+      "name": "Landing page",
+      "price": 800,
+      "unit": "project",
+      "timeline": "1 week",
+      "blurb": "One page that says what you do and gets people to contact you.",
+      "includes": [
+        "One page, written and designed",
+        "Built for phones first",
+        "Contact form",
+        "Search basics and analytics",
+        "Domain and hosting set-up"
+      ]
+    },
+    {
+      "id": "business-site",
+      "kind": "web",
+      "name": "Business site",
+      "price": 2000,
+      "unit": "project",
+      "timeline": "2 to 3 weeks",
+      "blurb": "A full site with separate pages for services, prices, about and contact.",
+      "includes": [
+        "Up to 6 pages",
+        "Content you can edit yourself",
+        "Forms, maps and booking links",
+        "Search basics and analytics",
+        "30 days of fixes after launch"
+      ]
+    },
+    {
+      "id": "bundle",
+      "kind": "both",
+      "name": "Bot + site bundle",
+      "price": 2400,
+      "unit": "project",
+      "timeline": "3 to 4 weeks",
+      "blurb": "A landing page and a business bot, wired together. Saves 200 against buying them separately.",
+      "includes": [
+        "Everything in Landing page",
+        "Everything in Business bot",
+        "Site forms arrive in your Telegram",
+        "Channel that posts on a schedule",
+        "30 days of fixes after launch"
+      ]
+    },
+    {
+      "id": "custom",
+      "kind": "custom",
+      "name": "Custom system",
+      "price": 4000,
+      "unit": "project",
+      "timeline": "Scoped with you",
+      "blurb": "Several connected parts built around how your business runs, such as matching, alerts and a live page on your site.",
+      "includes": [
+        "A written scope before any work starts",
+        "Bot, database and website parts as needed",
+        "Automated tests",
+        "Handover to accounts you own",
+        "30 days of fixes after launch"
+      ]
+    },
+    {
+      "id": "care",
+      "kind": "care",
+      "name": "Care plan",
+      "price": 80,
+      "unit": "month",
+      "timeline": "Monthly, cancel any time",
+      "blurb": "Hosting, monitoring and small edits after launch.",
+      "includes": [
+        "Hosting and uptime monitoring",
+        "Small text and price edits",
+        "Monthly backup",
+        "Reply within one working day"
+      ]
+    }
+  ],
+  "process": [
+    {
+      "name": "Brief",
+      "text": "Tell me what you need through the bot or the form. I reply within one working day with questions or a quote."
+    },
+    {
+      "name": "Fixed quote",
+      "text": "You get the scope, price and delivery date in writing. A 50% deposit starts the build."
+    },
+    {
+      "name": "Build",
+      "text": "You get a working preview within days and test it on your own phone. Changes inside the scope are included."
+    },
+    {
+      "name": "Launch and handover",
+      "text": "I deploy it, hand over the accounts and a short guide, and the fix period starts."
+    }
+  ],
+  "faq": [
+    {
+      "q": "Do I need to know anything technical?",
+      "a": "No. You tell me what the bot or site should do in plain words. At handover you get a short guide for the few things you will change yourself, such as prices and text."
+    },
+    {
+      "q": "Who owns the bot and the code?",
+      "a": "You do. The bot is registered under your Telegram account, the domain is in your name, and you get the source code at handover."
+    },
+    {
+      "q": "Where does it run, and what does that cost?",
+      "a": "On a small cloud server, usually a few dollars a month. You can pay the host directly, or the care plan covers hosting and monitoring."
+    },
+    {
+      "q": "Can the bot take payments?",
+      "a": "Yes. Telegram supports payments through providers such as Stripe, and a bot can also send a payment link and confirm when it is paid."
+    },
+    {
+      "q": "How long does a project take?",
+      "a": "A starter bot or landing page takes about a week from deposit. Larger builds take two to four weeks. The date is in your quote."
+    },
+    {
+      "q": "What if I need changes after launch?",
+      "a": "Fixes are free during the fix period in your package. After that, the care plan covers small edits and larger changes are quoted separately."
+    }
+  ],
+  "quote": {
+    "services": ["Telegram bot", "Website", "Bot and website", "Something else"],
+    "budgets": ["Under S$1,000", "S$1,000 to S$2,500", "S$2,500 to S$5,000", "Over S$5,000"],
+    "timelines": ["As soon as possible", "Within a month", "No fixed date"]
+  },
+  "perk": {
+    "percent": 10,
+    "code": "CHANNEL10",
+    "text": "Channel members get 10% off their first project."
+  }
+}

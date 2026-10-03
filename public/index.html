@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lucas: computer science student who builds Telegram bots and websites</title>
+  <meta name="description" content="Lucas is a computer science student at NTU in Singapore who builds Telegram bots and websites for small businesses.">
+  <meta name="theme-color" content="#E8DFD0">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <a class="skip" href="#main">Skip to content</a>
+  <p class="score" id="score" aria-live="polite">Hoops <strong id="score-value">0</strong></p>
+
+  <div class="hero">
+    <header class="top wrap">
+      <a class="logo" href="/" aria-label="Home">
+        <svg class="logo__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 15.2 27 5.5c.9-.4 1.8.4 1.5 1.4l-4.2 18c-.2.9-1.3 1.3-2 .7l-5.600-4.300-3 3c-.6.6-1.6.2-1.600-.6l-.2-5.200-7.600-1.700c-1-.2-1.200-1.300-.300-1.600Z"/></svg>
+        <span data-brand>Lucas</span>
+      </a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#services">What I build</a>
+        <a href="#channel">Channel</a>
+      </nav>
+      <a class="btn btn--yellow btn--small" href="#quote">Get in touch</a>
+    </header>
+
+    <main id="main">
+    <section class="hero__grid wrap">
+      <div class="hero__copy">
+        <h1>I'm <span data-brand>Lucas</span>. I study computer science and build things people use.</h1>
+        <p class="hero__lede">Second-year student at NTU in Singapore. I build Telegram bots and websites for small businesses, and this page is run by one of them.</p>
+        <div class="hero__actions">
+          <a class="btn btn--yellow" href="#about">About me</a>
+          <a class="btn btn--ghost" data-tg="bot" href="#" target="_blank" rel="noopener" hidden>Message my bot</a>
+        </div>
+        <p class="hero__note">The chat on this page is my real bot's menu. Tap the buttons. Every section heading below is also a command it answers.</p>
+        <p class="hero__play">Click or tap empty space to launch a paper plane. Knock the basketball down through the hoop on the right to score.</p>
+      </div>
+
+      <div class="chat" role="region" aria-label="Preview of the bot's menu">
+        <div class="chat__bar">
+          <span class="chat__avatar" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M4 15.2 27 5.5c.9-.4 1.8.4 1.5 1.4l-4.2 18c-.2.9-1.3 1.3-2 .7l-5.600-4.300-3 3c-.6.6-1.6.2-1.600-.6l-.2-5.200-7.600-1.700c-1-.2-1.200-1.300-.300-1.600Z"/></svg>
+          </span>
+          <div class="chat__who">
+            <strong><span data-brand>Lucas</span>'s bot</strong>
+            <span>bot</span>
+          </div>
+        </div>
+        <div class="chat__body" id="chat-body" aria-live="polite"></div>
+        <p class="chat__hint" id="chat-hint" hidden></p>
+      </div>
+    </section>
+  </div>
+
+  <section class="section wrap" id="about">
+    <p class="cmd">/about</p>
+    <div class="about">
+      <div>
+        <h2>Student, builder, part-time tutor.</h2>
+        <div class="about__text" id="about-text"></div>
+        <p class="socials" id="socials" hidden></p>
+      </div>
+      <div class="about__side">
+        <img class="about__photo" id="about-photo" alt="" hidden>
+        <dl class="facts" id="facts"></dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--wash" id="projects">
+    <div class="wrap">
+      <p class="cmd">/projects</p>
+      <h2>Things I have built.</h2>
+      <div class="work" id="project-list"></div>
+    </div>
+  </section>
+
+  <section class="section wrap" id="services">
+    <p class="cmd">/services</p>
+    <h2>What I build for clients.</h2>
+    <p class="section__lede">Telegram bots and websites for small businesses, at fixed prices agreed in writing before work starts.</p>
+    <div class="services" id="services-list"></div>
+
+    <div class="wire">
+      <h3>How the two connect</h3>
+      <ol class="wire__flow">
+        <li><strong>Your website</strong><span>A visitor sends the form.</span></li>
+        <li><strong>Your bot</strong><span>It files the request and tags what they want.</span></li>
+        <li><strong>Your phone</strong><span>You get a Telegram message and reply in one tap.</span></li>
+      </ol>
+      <p class="wire__note">This site runs the same way. The form at the bottom of this page lands in my Telegram.</p>
+    </div>
+
+    <h3 class="prices__title">Starting prices</h3>
+    <ul class="prices" id="packages"></ul>
+    <p class="prices__note">Tap a package in the chat at the top of the page to see everything it includes.</p>
+  </section>
+
+  <section class="section section--ink" id="channel">
+    <div class="wrap channel">
+      <div class="channel__copy">
+        <p class="cmd">/channel</p>
+        <h2>A channel that posts by itself.</h2>
+        <p class="section__lede">My bot publishes to my Telegram channel on a schedule. These are its latest posts, pulled live from the bot.</p>
+        <p class="perk" id="perk"></p>
+        <a class="btn btn--yellow" data-tg="channel" href="#" target="_blank" rel="noopener" hidden>Join the channel</a>
+      </div>
+      <div class="posts" id="posts"></div>
+    </div>
+  </section>
+
+  <section class="section wrap" id="quote">
+    <div class="quote">
+      <div class="quote__copy">
+        <p class="cmd">/quote</p>
+        <h2>Get in touch.</h2>
+        <p class="section__lede">Tell me about a project, or just say hello. I reply within one working day, and asking for a quote costs nothing.</p>
+        <p class="quote__alt" data-tg-wrap hidden>Prefer Telegram? <a data-tg="bot-quote" href="#" target="_blank" rel="noopener">Ask through the bot</a>. It takes four taps.</p>
+        <p class="quote__direct" id="direct" hidden></p>
+      </div>
+
+      <form class="form" id="quote-form" novalidate>
+        <p class="form__package" id="form-package" hidden>
+          <span>Package: <strong id="form-package-name"></strong></span>
+          <button type="button" id="form-package-clear" aria-label="Remove the selected package">Remove</button>
+        </p>
+        <div class="field">
+          <label for="f-name">Your name</label>
+          <input id="f-name" name="name" autocomplete="name" required maxlength="80">
+          <p class="field__error" data-error="name"></p>
+        </div>
+        <div class="field">
+          <label for="f-contact">Telegram @username or email</label>
+          <input id="f-contact" name="contact" autocomplete="email" required maxlength="120">
+          <p class="field__error" data-error="contact"></p>
+        </div>
+        <div class="field">
+          <label for="f-service">What is it about?</label>
+          <select id="f-service" name="service" required></select>
+          <p class="field__error" data-error="service"></p>
+        </div>
+        <div class="field">
+          <label for="f-budget">Budget <span class="field__opt">Optional</span></label>
+          <select id="f-budget" name="budget"></select>
+          <p class="field__error" data-error="budget"></p>
+        </div>
+        <div class="field field--wide">
+          <label for="f-timeline">When do you need it? <span class="field__opt">Optional</span></label>
+          <select id="f-timeline" name="timeline"></select>
+          <p class="field__error" data-error="timeline"></p>
+        </div>
+        <div class="field field--wide">
+          <label for="f-details">Your message <span class="field__opt">Optional</span></label>
+          <textarea id="f-details" name="details" rows="5" maxlength="1500" placeholder="For example: a bot for my salon that shows free slots and takes bookings."></textarea>
+          <p class="field__error" data-error="details"></p>
+        </div>
+        <div class="field field--trap" aria-hidden="true">
+          <label for="f-company">Company website</label>
+          <input id="f-company" name="company_website" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="field field--wide form__end">
+          <button class="btn btn--cobalt" type="submit" id="form-submit">Send message</button>
+          <p class="form__status" id="form-status" role="alert"></p>
+        </div>
+      </form>
+
+      <div class="sent" id="sent" hidden tabindex="-1">
+        <h3>Message sent</h3>
+        <p>Your reference is <code id="sent-ref"></code></p>
+        <p>I reply within one working day.</p>
+        <p id="sent-tg-text" hidden>Open the bot to link this message to your Telegram, so I can reply to you there.</p>
+        <a class="btn btn--cobalt" id="sent-tg" href="#" target="_blank" rel="noopener" hidden>Continue on Telegram</a>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__grid">
+      <div>
+        <p class="footer__brand" data-brand>Lucas</p>
+        <p data-brand-line>Computer science student in Singapore. I build Telegram bots and websites.</p>
+      </div>
+      <div class="footer__links">
+        <a data-tg="bot" href="#" target="_blank" rel="noopener" hidden>Bot</a>
+        <a data-tg="channel" href="#" target="_blank" rel="noopener" hidden>Channel</a>
+        <a id="footer-telegram" href="#" target="_blank" rel="noopener" hidden></a>
+        <a id="footer-email" href="#"></a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/background.js" defer></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>

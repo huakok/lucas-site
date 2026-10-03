@@ -1,0 +1,42 @@
+[
+  {
+    "id": "enquiries",
+    "title": "Stop losing enquiries in your DMs",
+    "body": "If customers message you on three apps, some of them never get an answer.\n\nA Telegram bot collects every enquiry in one place, asks the questions you always ask, and messages you when someone is ready to book.\n\nStarter bots take about a week to build."
+  },
+  {
+    "id": "form-to-telegram",
+    "title": "Your website form should reach your phone",
+    "body": "Most contact forms send an email nobody reads until Monday.\n\nI wire site forms to Telegram: the request arrives as a message, tagged with what the customer wants, and you can reply in one tap."
+  },
+  {
+    "id": "bot-faq",
+    "title": "What can a bot answer for you?",
+    "body": "Opening hours. Prices. Where to park. Whether you deliver.\n\nIf you answer the same five questions every day, a menu bot can answer them at 2am and pass on only the conversations that need you."
+  },
+  {
+    "id": "bookings",
+    "title": "Bookings without the back-and-forth",
+    "body": "A booking bot shows your free slots, takes the customer's choice, confirms it, and reminds them the day before.\n\nYou see every booking in Telegram and can export them to Google Sheets."
+  },
+  {
+    "id": "channel-autopost",
+    "title": "This channel runs itself",
+    "body": "Every post here is published by a bot on a schedule. I write a batch once and it goes out through the week.\n\nIf you have a channel you keep forgetting to post in, I can set up the same thing for you."
+  },
+  {
+    "id": "landing-page",
+    "title": "One page is often enough",
+    "body": "A small business rarely needs ten pages. It needs one that says what you do, what it costs and how to reach you, and loads fast on a phone.\n\nLanding pages are written, designed and live in about a week."
+  },
+  {
+    "id": "ownership",
+    "title": "You own what I build",
+    "body": "The bot sits under your Telegram account. The domain is in your name. You get the source code at handover.\n\nIf you ever want another developer to take over, nothing is locked to me."
+  },
+  {
+    "id": "member-perk",
+    "title": "10% off for channel members",
+    "body": "If you are reading this in the channel, you already qualify.\n\nOpen the bot, tap the channel perk button, and it will check your membership and add the discount to your quote."
+  }
+]
