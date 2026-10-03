@@ -1,25 +1,28 @@
-// Animated page background: paper planes that wander, dodge the cursor and can
-// be launched with a click, plus a tennis ball, a basketball and a pickleball
-// that bounce around and can be knocked with the cursor. Knocking the
-// basketball down through the hoop on the right edge scores a point.
+// Animated page background, seen from above like a pond: fish silhouettes
+// swim around on their own, and a click on empty space sends out a ripple.
+// A tennis ball, a basketball and a pickleball also bounce around and can be
+// knocked with the cursor. Knocking the basketball down through the hoop on
+// the right edge scores a point.
 (() => {
   const canvas = document.getElementById('sky');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Read the accent colour from the stylesheet so the planes follow the palette.
+  // Read the accent colour from the stylesheet so the fish follow the palette.
   const hex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().replace('#', '');
   const accent = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) || 100).join(', ');
 
   const rand = (min, max) => min + Math.random() * (max - min);
-  const MAX_PLANES = 12;
+  const RIPPLE_LIFE = 2.6; // seconds
   const SHOT_WINDOW = 4; // seconds a hit stays live for scoring
   let clock = 0; // seconds since the page loaded
+  let seeded = false;
   let playing = true; // whether the balls, hoop and score are shown
   let width = 0;
   let height = 0;
-  let planes = [];
+  let fish = [];
+  let ripples = [];
   let balls = [];
   const pointer = { x: -999, y: -999, vx: 0, vy: 0, active: false, at: 0 };
 
@@ -43,6 +46,12 @@
     hoop.x1 = hoop.x2 - hoop.rim;
     hoop.y = height * 0.34;
     updatePlay();
+    // A page opened in a background tab can report no size at first, so the
+    // fish and balls are placed the first time there is a real size to use.
+    if (!seeded && width > 0 && height > 0) {
+      seed();
+      seeded = true;
+    }
   }
 
   // On phones the balls and hoop would sit on top of the text, so they only
@@ -52,25 +61,26 @@
     if (scoreBox) scoreBox.classList.toggle('score--off', !playing);
   }
 
-  const makePlane = (x, y, angle, speed) => ({
-    x, y, angle,
-    speed,
-    cruise: rand(35, 110),
-    wander: 0,
-    targetWander: 0,
-    untilTurn: rand(0.5, 2.5),
-    size: rand(0.8, 1.25),
-    trail: [],
-    sinceTrail: 0,
-  });
+  const makeFish = () => {
+    const size = rand(0.8, 1.9) * (width < 700 ? 0.75 : 1); // smaller on phones
+    const cruise = rand(18, 55);
+    return {
+      x: rand(0, width),
+      y: rand(0, height),
+      angle: rand(0, Math.PI * 2),
+      speed: cruise,
+      cruise,
+      wander: 0,
+      targetWander: 0,
+      untilTurn: rand(0.5, 3),
+      phase: rand(0, 6),
+      size,
+      alpha: 0.14 + 0.16 * Math.min(1, size / 1.9), // smaller fish read as deeper
+    };
+  };
 
   function seed() {
-    const count = width < 700 ? 4 : 6;
-    planes = Array.from({ length: count }, () => {
-      const p = makePlane(rand(0, width), rand(0, height), rand(-0.9, 0.3), 0);
-      p.speed = p.cruise;
-      return p;
-    });
+    fish = Array.from({ length: width < 700 ? 5 : 8 }, makeFish);
     const radius = width < 700 ? 15 : 20;
     balls = ['tennis', 'basketball', 'pickleball'].map((type, i) => ({
       type,
@@ -85,50 +95,26 @@
 
   // ---- movement ------------------------------------------------------------
 
-  function movePlane(p, dt) {
-    // Every so often pick a new turn rate and speed: a lazy curve, a straight
-    // run, or now and then a full loop.
-    p.untilTurn -= dt;
-    if (p.untilTurn <= 0) {
-      const loop = Math.random() < 0.15;
-      p.targetWander = loop ? (Math.random() < 0.5 ? -1 : 1) * rand(2.8, 3.8) : rand(-1.5, 1.5);
-      p.cruise = rand(35, 110);
-      p.untilTurn = loop ? rand(1.2, 2) : rand(0.8, 3.2);
+  function moveFish(f, dt) {
+    // Every few seconds pick a new gentle turn and pace. Now and then a fish
+    // darts forward for a moment, then settles again.
+    f.untilTurn -= dt;
+    if (f.untilTurn <= 0) {
+      const dart = Math.random() < 0.12;
+      f.targetWander = rand(-0.9, 0.9);
+      f.cruise = dart ? rand(90, 140) : rand(18, 55);
+      f.untilTurn = dart ? rand(0.4, 0.9) : rand(1.5, 4.5);
     }
-    p.wander += (p.targetWander - p.wander) * Math.min(1, 2.5 * dt);
-    p.angle += p.wander * dt;
+    f.wander += (f.targetWander - f.wander) * Math.min(1, 1.5 * dt);
+    f.angle += f.wander * dt;
+    f.speed += (f.cruise - f.speed) * Math.min(1, 2 * dt);
+    f.x += Math.cos(f.angle) * f.speed * dt;
+    f.y += Math.sin(f.angle) * f.speed * dt;
+    f.phase += dt * (3 + f.speed * 0.09); // the tail beats faster at speed
 
-    if (pointer.active) {
-      const dx = p.x - pointer.x;
-      const dy = p.y - pointer.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 150) {
-        // Turn away from the cursor, harder the closer it is.
-        let diff = Math.atan2(dy, dx) - p.angle;
-        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-        const urgency = 1 - dist / 150;
-        p.angle += diff * 4 * urgency * dt;
-        p.speed = Math.max(p.speed, p.cruise + 120 * urgency);
-      }
-    }
-
-    p.speed += (p.cruise - p.speed) * Math.min(1, 1.2 * dt);
-    p.x += Math.cos(p.angle) * p.speed * dt;
-    p.y += Math.sin(p.angle) * p.speed * dt;
-
-    p.sinceTrail += dt;
-    if (p.sinceTrail > 0.05) {
-      p.sinceTrail = 0;
-      p.trail.push(p.x, p.y);
-      if (p.trail.length > 90) p.trail.splice(0, 2);
-    }
-
-    const m = 40;
-    if (p.x > width + m || p.x < -m || p.y > height + m || p.y < -m) {
-      p.x = p.x > width + m ? -m : p.x < -m ? width + m : p.x;
-      p.y = p.y > height + m ? -m : p.y < -m ? height + m : p.y;
-      p.trail = [];
-    }
+    const m = 50 * f.size;
+    if (f.x > width + m) f.x = -m; else if (f.x < -m) f.x = width + m;
+    if (f.y > height + m) f.y = -m; else if (f.y < -m) f.y = height + m;
   }
 
   function addPoint() {
@@ -240,37 +226,98 @@
 
   // ---- drawing -------------------------------------------------------------
 
-  function drawPlane(p) {
-    if (p.trail.length > 4) {
-      ctx.beginPath();
-      ctx.moveTo(p.trail[0], p.trail[1]);
-      for (let i = 2; i < p.trail.length; i += 2) ctx.lineTo(p.trail[i], p.trail[i + 1]);
-      ctx.setLineDash([2, 8]);
-      ctx.lineWidth = 1.6;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgba(${accent}, 0.3)`;
-      ctx.stroke();
-      ctx.setLineDash([]);
+  // Half-widths of the body from nose to tail base.
+  const FISH_WIDTHS = [0, 4.6, 6.6, 7.2, 6.6, 5.2, 3.6, 2.2, 1.3];
+
+  function drawFish(f) {
+    const n = FISH_WIDTHS.length;
+    const step = 5.2;
+    // The spine: a wave travels from head to tail, growing as it goes.
+    const spine = [];
+    for (let i = 0; i < n; i += 1) {
+      const t = i / (n - 1);
+      spine.push([(n - 1) * step * 0.45 - i * step, Math.sin(f.phase - t * 3.2) * (0.6 + 5.5 * t * t)]);
     }
+    const left = [];
+    const right = [];
+    for (let i = 0; i < n; i += 1) {
+      const a = spine[Math.max(0, i - 1)];
+      const b = spine[Math.min(n - 1, i + 1)];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      const nx = -(b[1] - a[1]) / len;
+      const ny = (b[0] - a[0]) / len;
+      const w = FISH_WIDTHS[i];
+      left.push([spine[i][0] + nx * w, spine[i][1] + ny * w]);
+      right.push([spine[i][0] - nx * w, spine[i][1] - ny * w]);
+    }
+    const outline = [...left, ...right.reverse()];
+
     ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.angle);
-    ctx.scale(p.size, p.size);
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.angle);
+    ctx.scale(f.size, f.size);
+    ctx.fillStyle = `rgba(${accent}, ${f.alpha})`;
+
+    // Body: a smooth curve through the outline points.
     ctx.beginPath();
-    ctx.moveTo(15, 0);
-    ctx.lineTo(-11, -9);
-    ctx.lineTo(-5, 0);
-    ctx.lineTo(-11, 9);
+    ctx.moveTo(outline[0][0], outline[0][1]);
+    for (let i = 1; i < outline.length; i += 1) {
+      const next = outline[(i + 1) % outline.length];
+      ctx.quadraticCurveTo(outline[i][0], outline[i][1], (outline[i][0] + next[0]) / 2, (outline[i][1] + next[1]) / 2);
+    }
     ctx.closePath();
-    ctx.fillStyle = `rgba(${accent}, 0.5)`;
     ctx.fill();
+
+    // Tail fin: follows the last stretch of spine, with a little extra swing.
+    const end = spine[n - 1];
+    const before = spine[n - 2];
+    const dir = Math.atan2(end[1] - before[1], end[0] - before[0]) + Math.sin(f.phase - 3.6) * 0.35;
+    const lobe = (spread, length) => [end[0] + Math.cos(dir + spread) * length, end[1] + Math.sin(dir + spread) * length];
+    const [ax, ay] = lobe(0.55, 13);
+    const [bx, by] = lobe(-0.55, 13);
+    const [cx, cy] = lobe(0, 6);
     ctx.beginPath();
-    ctx.moveTo(15, 0);
-    ctx.lineTo(-5, 0);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(251, 248, 242, 0.8)';
-    ctx.stroke();
+    ctx.moveTo(end[0], end[1]);
+    ctx.lineTo(ax, ay);
+    ctx.quadraticCurveTo(cx, cy, bx, by);
+    ctx.closePath();
+    ctx.fill();
+
+    // Side fins, sweeping back from just behind the head.
+    const [fx, fy] = spine[2];
+    const sweep = 0.9 + Math.sin(f.phase * 0.5) * 0.15;
+    for (const side of [-1, 1]) {
+      const baseY = fy + side * 5.5;
+      ctx.beginPath();
+      ctx.moveTo(fx, baseY);
+      ctx.quadraticCurveTo(fx - 2, baseY + side * 8, fx - Math.cos(sweep) * 9, baseY + side * Math.sin(sweep) * 9);
+      ctx.quadraticCurveTo(fx - 6, baseY + side, fx, baseY);
+      ctx.fill();
+    }
     ctx.restore();
+  }
+
+  // A ripple is a few rings spreading from the click. Each ring is a dark line
+  // with a light one just outside it, the way a real ripple catches the light,
+  // and the rings slow and fade as they travel.
+  function drawRipple(r) {
+    const fade = Math.max(0, 1 - r.age / RIPPLE_LIFE);
+    for (let i = 0; i < 4; i += 1) {
+      const t = r.age - i * 0.22;
+      if (t <= 0) continue;
+      const radius = 4 + 200 * (1 - Math.exp(-1.4 * t));
+      const strength = fade * fade * (1 - i * 0.18);
+      const line = 0.5 + (2.4 - i * 0.45) * fade;
+      ctx.lineWidth = line;
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${accent}, ${0.45 * strength})`;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, radius + line, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.75 * strength})`;
+      ctx.stroke();
+    }
   }
 
   function drawBall(b) {
@@ -357,7 +404,8 @@
 
   function draw() {
     ctx.clearRect(0, 0, width, height);
-    planes.forEach(drawPlane);
+    fish.forEach(drawFish);
+    ripples.forEach(drawRipple);
     if (!playing) return;
     drawHoop(false);
     balls.forEach(drawBall);
@@ -373,7 +421,9 @@
     last = now;
     clock = now / 1000;
     if (now - pointer.at > 120) { pointer.vx = 0; pointer.vy = 0; }
-    planes.forEach((p) => movePlane(p, dt));
+    fish.forEach((f) => moveFish(f, dt));
+    ripples.forEach((r) => { r.age += dt; });
+    ripples = ripples.filter((r) => r.age < RIPPLE_LIFE);
     if (playing) {
       balls.forEach((b) => moveBall(b, dt));
       collideBalls();
@@ -387,11 +437,10 @@
   }
 
   resize();
-  seed();
   draw();
   if (still) {
     if (scoreBox) scoreBox.hidden = true;
-    window.addEventListener('resize', () => { resize(); seed(); draw(); });
+    window.addEventListener('resize', () => { resize(); if (seeded) seed(); draw(); });
     return;
   }
 
@@ -418,9 +467,8 @@
     // Clicks on controls and inside the chat keep their normal job.
     if (e.target.closest('a, button, input, select, textarea, label, summary, .chat')) return;
     if (playing && balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
-    const plane = makePlane(e.clientX, e.clientY, rand(-1.2, -0.2), 320);
-    planes.push(plane);
-    if (planes.length > MAX_PLANES) planes.shift();
+    ripples.push({ x: e.clientX, y: e.clientY, age: 0 });
+    if (ripples.length > 8) ripples.shift();
   });
 
   requestAnimationFrame(frame);
