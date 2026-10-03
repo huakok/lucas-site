@@ -15,7 +15,7 @@
     "welcome": "I study computer science at NTU in Singapore and build Telegram bots and websites for small businesses. This bot is one of them: everything you tap here is something I can build for you."
   },
   "about": {
-    "photo": "/lucas.jpg",
+    "photo": "lucas.jpg",
     "photoAlt": "Lucas",
     "paragraphs": [
       "I am a second-year computer science student at NTU in Singapore. Outside lectures I build small software systems for businesses: Telegram bots, websites, and the databases that connect them.",

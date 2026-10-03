@@ -1,19 +1,16 @@
 import http from 'node:http';
 import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-import { ROOT, config } from './config.js';
+import { config } from './config.js';
 import { openStores } from './store.js';
 import { Telegram, sleep } from './telegram.js';
-import { allScreens, priceLabel } from './flows.js';
+import { allScreens } from './flows.js';
 import { createLead, createLeadNotifier, validateWebLead } from './leads.js';
 import { createChannel } from './channel.js';
 import { PUBLIC_COMMANDS, createBot } from './bot.js';
+import { PUBLIC_DIR, content, publicContent, queue, screenContext } from './site-data.js';
 
-const readJson = (file) => JSON.parse(readFileSync(path.join(ROOT, 'content', file), 'utf8'));
-const content = readJson('content.json');
-const queue = readJson('channel-posts.json');
 const stores = openStores();
 
 // ---- Telegram ---------------------------------------------------------------
@@ -61,26 +58,6 @@ async function runBot() {
 }
 
 // ---- Website API ------------------------------------------------------------
-
-const publicContent = () => {
-  const { perk, bot, ...rest } = content;
-  // The photo only shows once its file has been added to public/.
-  const photo = content.about.photo || '';
-  const hasPhoto = Boolean(photo) && existsSync(path.join(PUBLIC_DIR, photo));
-  return {
-    ...rest,
-    about: { ...content.about, photo: hasPhoto ? photo : '' },
-    packages: content.packages.map((p) => ({ ...p, priceLabel: priceLabel(content, p) })),
-    perk: { percent: perk.percent, text: perk.text }, // the code itself stays in the bot
-    telegram: {
-      bot: config.botUsername ? `https://t.me/${config.botUsername}` : '',
-      botUsername: config.botUsername,
-      channel: config.channelUrl,
-    },
-  };
-};
-
-const screenContext = () => ({ content, botUsername: config.botUsername, channelUrl: config.channelUrl });
 
 // At most 5 form submissions per address every 10 minutes.
 const recentSubmits = new Map();
@@ -136,7 +113,6 @@ async function submitLead(req, res) {
 
 // ---- Static files -----------------------------------------------------------
 
-const PUBLIC_DIR = path.join(ROOT, 'public');
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -182,8 +158,8 @@ const server = http.createServer(async (req, res) => {
     const { pathname } = new URL(req.url, 'http://localhost');
     if (req.method === 'POST' && pathname === '/api/lead') return await submitLead(req, res);
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'Method not allowed' });
-    if (pathname === '/api/content') return json(res, 200, publicContent());
-    if (pathname === '/api/screens') return json(res, 200, allScreens(screenContext()));
+    if (pathname === '/api/content') return json(res, 200, publicContent(config));
+    if (pathname === '/api/screens') return json(res, 200, allScreens(screenContext(config)));
     if (pathname === '/api/channel') return json(res, 200, { posts: channel.recent(3) });
     if (pathname === '/health') return json(res, 200, { ok: true, bot: Boolean(tg) });
     return await serveStatic(pathname, res);

@@ -20,6 +20,10 @@ const getJson = async (url) => {
   return res.json();
 };
 
+// Set by the static export: the page is served as plain files, with no server behind it.
+const STATIC = 'static' in document.documentElement.dataset;
+const api = (name) => (STATIC ? `api/${name}.json` : `/api/${name}`);
+
 const state = { content: null, screens: {}, packageId: '' };
 
 // ---- Chat preview -----------------------------------------------------------
@@ -45,7 +49,7 @@ function onKey(button) {
     const packageId = button.act.split(':')[2] || '';
     choosePackage(packageId);
     $('#quote').scrollIntoView();
-    $('#f-name').focus({ preventScroll: true });
+    if (!STATIC) $('#f-name').focus({ preventScroll: true });
   }
 }
 
@@ -110,8 +114,20 @@ function renderContent(content) {
     footerTelegram.href = url;
     footerTelegram.hidden = false;
   }
-  $('#direct').replaceChildren('Or reach me directly: ', ...direct);
-  $('#direct').hidden = false;
+  if (STATIC) {
+    // No server to receive the form, so offer the direct routes instead.
+    form.hidden = true;
+    $('#direct-actions').replaceChildren(
+      ...direct.map((link, i) => {
+        link.className = `btn btn--small ${i === 0 ? 'btn--cobalt' : 'btn--ghost'}`;
+        return link;
+      }),
+    );
+    $('#direct-panel').hidden = false;
+  } else {
+    $('#direct').replaceChildren('Or reach me directly: ', ...direct);
+    $('#direct').hidden = false;
+  }
 
   if (content.about.photo) {
     const photo = $('#about-photo');
@@ -285,9 +301,9 @@ function revealOnScroll() {
 async function init() {
   try {
     const [content, screens, channel] = await Promise.all([
-      getJson('/api/content'),
-      getJson('/api/screens'),
-      getJson('/api/channel'),
+      getJson(api('content')),
+      getJson(api('screens')),
+      getJson(api('channel')),
     ]);
     state.content = content;
     state.screens = screens;
