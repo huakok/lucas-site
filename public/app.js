@@ -22,7 +22,7 @@ const getJson = async (url) => {
 
 // Set by the static export: the page is served as plain files, with no server behind it.
 const STATIC = 'static' in document.documentElement.dataset;
-const api = (name) => (STATIC ? `api/${name}.json` : `/api/${name}`);
+const api = (name) => (STATIC ? `api/${name}.json?v=${document.documentElement.dataset.static}` : `/api/${name}`);
 
 const state = { content: null, screens: {}, packageId: '' };
 
