@@ -193,7 +193,6 @@
   const SHOT_WINDOW = 4; // seconds a hit stays live for scoring
   let clock = 0; // seconds since the page loaded
   let seeded = false;
-  let playing = true; // whether the balls, hoop and score are shown
   let width = 0;
   let height = 0;
   let fish = [];
@@ -211,8 +210,14 @@
 
   function resize() {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    width = window.innerWidth;
-    height = window.innerHeight;
+    // The canvas is as tall as the largest the screen gets, so a phone hiding
+    // or showing its address bar while scrolling does not count as a resize
+    // (a real resize rebuilds the water and would wipe any ripples).
+    const w = view.clientWidth || window.innerWidth;
+    const h = view.clientHeight || window.innerHeight;
+    if (w === width && h === height) return;
+    width = w;
+    height = h;
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -225,20 +230,12 @@
     hoop.x2 = width - 8;
     hoop.x1 = hoop.x2 - hoop.rim;
     hoop.y = height * 0.34;
-    updatePlay();
     // A page opened in a background tab can report no size at first, so the
     // fish and balls are placed the first time there is a real size to use.
     if (!seeded && width > 0 && height > 0) {
       seed();
       seeded = true;
     }
-  }
-
-  // On phones the balls and hoop would sit on top of the text, so they only
-  // appear around the hero. Wider screens have room for them everywhere.
-  function updatePlay() {
-    playing = width >= 700 || window.scrollY < height * 0.6;
-    if (scoreBox) scoreBox.classList.toggle('score--off', !playing);
   }
 
   const makeFish = () => {
@@ -585,12 +582,10 @@
     ctx.clearRect(0, 0, width, height);
     fish.forEach(drawFish);
     ripples.forEach(drawRipple);
-    if (playing) {
-      drawHoop(false);
-      balls.forEach(drawBall);
-      drawHoop(true);
-      drawPopups();
-    }
+    drawHoop(false);
+    balls.forEach(drawBall);
+    drawHoop(true);
+    drawPopups();
     if (water) water.render(canvas);
   }
 
@@ -606,10 +601,8 @@
     ripples.forEach((r) => { r.age += dt; });
     ripples = ripples.filter((r) => r.age < RIPPLE_LIFE);
     if (water) water.step(dt);
-    if (playing) {
-      balls.forEach((b) => moveBall(b, dt));
-      collideBalls();
-    }
+    balls.forEach((b) => moveBall(b, dt));
+    collideBalls();
     hoop.swish = Math.max(0, hoop.swish - dt);
     hoop.cooldown = Math.max(0, hoop.cooldown - dt);
     popups.forEach((p) => { p.age += dt; });
@@ -627,7 +620,6 @@
   }
 
   window.addEventListener('resize', resize);
-  window.addEventListener('scroll', updatePlay, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) { last = performance.now(); requestAnimationFrame(frame); }
   });
@@ -648,7 +640,7 @@
   window.addEventListener('pointerdown', (e) => {
     // Clicks on controls and inside the chat keep their normal job.
     if (e.target.closest('a, button, input, select, textarea, label, summary, .chat')) return;
-    if (playing && balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
+    if (balls.some((b) => kick(b, e.clientX, e.clientY, 26, 520))) return;
     if (water) {
       water.drop(e.clientX, e.clientY);
       return;
